@@ -785,10 +785,14 @@ local function ensureTooltip()
 	local corner = Instance.new("UICorner", frame)
 	corner.CornerRadius = UDim.new(0, 4)
 
+	local stroke = Instance.new("UIStroke", frame)
+	stroke.Color = Color3.fromRGB(42, 42, 42)
+	stroke.Thickness = 1
+
 	local pad = Instance.new("UIPadding", frame)
 	pad.PaddingLeft = UDim.new(0, 8)
 	pad.PaddingRight = UDim.new(0, 8)
-	pad.PaddingTop = UDim.new(0, 6)
+	pad.PaddingTop = UDim.new(0, 5)
 	pad.PaddingBottom = UDim.new(0, 5)
 
 	local label = Instance.new("TextLabel", frame)
