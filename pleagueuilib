@@ -4718,6 +4718,7 @@ function library:AddWindow(text)
 			local NumbersOnly = Options.NumbersOnly or false
 			local Min = Options.Min
 			local Max = Options.Max
+			local Placeholder = Options.Placeholder or "..."
 			
 			--[TemplateInputBox]--
 			local InputFrame = Instance.new("Frame")
@@ -4749,7 +4750,8 @@ function library:AddWindow(text)
 			BoxBg.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 			BoxBg.BorderSizePixel = 0
 			BoxBg.Position = UDim2.new(1.02739561, 0, 0.546084344, 0)
-			BoxBg.Size = UDim2.new(0, 80, 0, 16)
+			local placeholderWidth = math.clamp(#Placeholder * 6 + 10, 80, 140)
+			BoxBg.Size = UDim2.new(0, placeholderWidth, 0, 16)
 			BoxBg.ZIndex = 25
 			BoxBg.Parent = InputFrame
 			
@@ -4771,8 +4773,9 @@ function library:AddWindow(text)
 			InputBox.ClearTextOnFocus = false
 			InputBox.Font = Enum.Font.ArialBold
 			InputBox.Text = tostring(DefaultValue)
-			InputBox.PlaceholderText = "..."
-			InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+			InputBox.PlaceholderText = Placeholder
+			InputBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
+			InputBox.TextColor3 = Color3.fromRGB(210, 210, 210)
 			InputBox.TextSize = 10
 			InputBox.TextXAlignment = Enum.TextXAlignment.Center
 			InputBox.Parent = BoxBg
