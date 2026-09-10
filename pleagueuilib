@@ -867,6 +867,10 @@ end
 -- UI SCALE + LAYOUT (optional position memory)
 -- ════════════════════════════════════════════════════════════════════════════
 library.CurrentScale = 1
+library.MenuWidth = 588
+library.MenuHeight = 415
+library.MenuHeader = 25
+library.MenuFooter = 24
 library.LayoutFile = "PlaguUIConfigs/_ui_layout.json"
 library.AutoSaveLayout = false
 
@@ -880,6 +884,8 @@ local function encodeLayout()
 	local p = MAIN.Position
 	return {
 		Scale = library.CurrentScale or 1,
+		Width = library.MenuWidth,
+		Height = library.MenuHeight,
 		PosXScale = p.X.Scale,
 		PosXOffset = p.X.Offset,
 		PosYScale = p.Y.Scale,
@@ -889,6 +895,9 @@ end
 
 local function applyLayout(data)
 	if type(data) ~= "table" then return end
+	if data.Width or data.Height then
+		library:SetMenuSize(data.Width or library.MenuWidth, data.Height or library.MenuHeight, true)
+	end
 	if data.Scale then
 		library:SetScale(data.Scale, true)
 	end
@@ -902,12 +911,27 @@ local function applyLayout(data)
 	end
 end
 
+function library:_LayoutPx(n)
+	local s = (library._UIScale and library._UIScale.Scale) or library.CurrentScale or 1
+	if not s or s <= 0 then s = 1 end
+	return (tonumber(n) or 0) / s
+end
+
 function library:SetScale(scale, skipSave)
 	scale = tonumber(scale) or 1
 	scale = math.clamp(scale, 0.65, 1.5)
 	library.CurrentScale = scale
 	if library._UIScale then
 		library._UIScale.Scale = scale
+	end
+	if library.allSections then
+		task.defer(function()
+			for _, entry in ipairs(library.allSections) do
+				if entry.Resize then
+					pcall(entry.Resize)
+				end
+			end
+		end)
 	end
 	if not skipSave and library.AutoSaveLayout then
 		library:SaveLayout(true)
@@ -916,6 +940,62 @@ end
 
 function library:GetScale()
 	return library.CurrentScale or 1
+end
+
+function library:GetSectionWidth()
+	return math.max(220, math.floor((library.MenuWidth or 588) / 2) - 19)
+end
+
+function library:GetMenuSize()
+	return library.MenuWidth or 588, library.MenuHeight or 415
+end
+
+local function applyMenuChrome()
+	local w = library.MenuWidth or 588
+	local h = library.MenuHeight or 415
+	local header = library.MenuHeader or 25
+	local footer = library.MenuFooter or 24
+	local body = math.max(80, h - header - footer)
+
+	MAIN.Size = UDim2.fromOffset(w, h)
+	BG.Position = UDim2.fromOffset(0, header)
+	BG.Size = UDim2.fromOffset(w, body)
+	limit1.Position = UDim2.fromOffset(0, header)
+	limit1.Size = UDim2.fromOffset(w, body)
+	Upper.Size = UDim2.fromOffset(w, header)
+	DOWNER.Position = UDim2.fromOffset(0, h - footer)
+	DOWNER.Size = UDim2.fromOffset(w, footer)
+	linedecoupper.Position = UDim2.fromOffset(0, header)
+	linedecoDOWNER.Position = UDim2.fromOffset(0, h - footer)
+	UPPERLABEL.Position = UDim2.new(1, -42, 0, math.floor(header / 2))
+
+	for _, child in ipairs(limit1:GetChildren()) do
+		if child:IsA("ScrollingFrame") then
+			child.Size = UDim2.fromOffset(w, math.max(50, body - 6))
+		end
+	end
+end
+
+function library:SetMenuSize(width, height, skipSave)
+	library.MenuWidth = math.clamp(math.floor(tonumber(width) or library.MenuWidth or 588), 480, 1200)
+	library.MenuHeight = math.clamp(math.floor(tonumber(height) or library.MenuHeight or 415), 320, 900)
+	applyMenuChrome()
+	task.defer(function()
+		local sw = library:GetSectionWidth()
+		if library.allSections then
+			for _, entry in ipairs(library.allSections) do
+				if entry.Holder then
+					entry.Holder.Size = UDim2.fromOffset(sw, entry.Holder.Size.Y.Offset)
+				end
+				if entry.Resize then
+					pcall(entry.Resize)
+				end
+			end
+		end
+	end)
+	if not skipSave and library.AutoSaveLayout then
+		library:SaveLayout(true)
+	end
 end
 
 function library:SetLayoutSaving(enabled)
@@ -1114,6 +1194,13 @@ library:RegisterConfigItem("__UI_SCALE__", "Layout", function()
 	return library:GetScale()
 end, function(value)
 	library:SetScale(value, true)
+end)
+library:RegisterConfigItem("__UI_SIZE__", "Layout", function()
+	return { library.MenuWidth, library.MenuHeight }
+end, function(value)
+	if type(value) == "table" then
+		library:SetMenuSize(value[1], value[2], true)
+	end
 end)
 library:RegisterConfigItem("__UI_POSITION__", "Layout", function()
 	local p = MAIN.Position
@@ -3565,6 +3652,9 @@ end
 function library:AddWindow(text)
 	local sec = {}
 	text=text or 'Not Def'
+	local function lp(n)
+		return library:_LayoutPx(n)
+	end
 
 	local HOLDER = Instance.new("ScrollingFrame")
 	local _LEFT = Instance.new("Frame")
@@ -3597,7 +3687,12 @@ function library:AddWindow(text)
 	HOLDER.ClipsDescendants = false
 	HOLDER.Position = UDim2.new(0,0,0.019,0)
 	HOLDER.Visible = false
-	HOLDER.Size = UDim2.new(0, 588, 0, 359)
+	do
+		local mw = library.MenuWidth or 588
+		local mh = library.MenuHeight or 415
+		local body = math.max(50, mh - (library.MenuHeader or 25) - (library.MenuFooter or 24) - 6)
+		HOLDER.Size = UDim2.new(0, mw, 0, body)
+	end
 	HOLDER.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
 	HOLDER.CanvasSize = UDim2.new(0, 0, 0, 0)
 	HOLDER.ScrollBarThickness = 5
@@ -3677,24 +3772,14 @@ function library:AddWindow(text)
 	end
 	local function UpdateMainSize(f,anim)
 		HOLDER.ClipsDescendants = true
+		local taller = getlarger(2)
+		local canvasY = math.max(lp(taller.l), lp(taller.r)) + 15
 
-		if getlarger(1) == 'l' then
-			if anim then
-				TweenService:Create(HOLDER, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CanvasSize = UDim2.fromOffset(0, getlarger(2).l + 15)}):Play()
-			else   
-				HOLDER.CanvasSize = UDim2.fromOffset(0, getlarger(2).l + 15)
-
-			end
-
-		elseif getlarger(1) == 'r' then
-			if anim then
-				TweenService:Create(HOLDER, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CanvasSize = UDim2.fromOffset(0, getlarger(2).r + 15)}):Play()
-			else
-				HOLDER.CanvasSize = UDim2.fromOffset(0, getlarger(2).r + 15)
-				HOLDER.CanvasSize = UDim2.fromOffset(0, getlarger(2).r + 15)
-			end
+		if anim then
+			TweenService:Create(HOLDER, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CanvasSize = UDim2.fromOffset(0, canvasY)}):Play()
+		else
+			HOLDER.CanvasSize = UDim2.fromOffset(0, canvasY)
 		end
-
 	end
 
 	local function GetSide(typ,input)   
@@ -3737,14 +3822,11 @@ function library:AddWindow(text)
 	end
 	local function AutoFit(section,list)
 		if section and list then
-			local x,y =  section.AbsoluteSize.X,list.AbsoluteContentSize.Y  
-			local lefts,ls = 0,{};
-			local rights,rs = 0,{};
-			section.Size = UDim2.fromOffset(x,  y + 8) + UDim2.new(0,0,0,23)
-
+			local w = library:GetSectionWidth()
+			if w <= 0 then w = 275 end
+			section.Size = UDim2.fromOffset(w, lp(list.AbsoluteContentSize.Y) + 31)
 			UpdateMainSize()
 		end
-
 	end
 
 	function sec:AddSection(Texto,side)
@@ -3774,7 +3856,7 @@ function library:AddWindow(text)
 		SECTIONHOLDER.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 		SECTIONHOLDER.BorderSizePixel = 0      
 		SECTIONHOLDER.Position = UDim2.new(0.0289115645, 0, -4.23979145e-08, 0)
-		SECTIONHOLDER.Size = UDim2.new(0, 275, 0, 138)
+		SECTIONHOLDER.Size = UDim2.new(0, library:GetSectionWidth(), 0, 138)
 		SECTIONHOLDER.ZIndex = 3	
 
 		if library.sections[SECTIONHOLDER.Name] ~= nil then
@@ -3845,20 +3927,17 @@ function library:AddWindow(text)
 		SECTIONIOL.Parent = Section
 		SECTIONIOL.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-		SECTIONHOLDER.Size = UDim2.fromOffset(SECTIONHOLDER.AbsoluteSize.X,  SECTION2UILIB.AbsoluteContentSize.Y + 8) + UDim2.new(0,0,0,23)
-		_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset , 0 ,LIST.AbsoluteContentSize.Y + 15);
+		SECTIONHOLDER.Size = UDim2.fromOffset(library:GetSectionWidth(), lp(SECTION2UILIB.AbsoluteContentSize.Y) + 31)
+		_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, lp(LIST.AbsoluteContentSize.Y) + 15)
 
 		AutoFit()
 		--TweenService:Create(closeSection , TweenInfo.new(0.26, Enum.EasingStyle.Quad , Enum.EasingDirection.InOut), {Rotation = 0}):Play()	
 		UpdateMainSize()
 
-		-- Helper to cut repeated layout code
 		local function ResizeSection()
-			SECTIONHOLDER.Size = UDim2.fromOffset(SECTIONHOLDER.AbsoluteSize.X, SECTION2UILIB.AbsoluteContentSize.Y + 8) + UDim2.new(0,0,0,23)
-			_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, LIST.AbsoluteContentSize.Y + 15)
-			SECTIONHOLDER:TweenSize(UDim2.fromOffset(SECTIONHOLDER.AbsoluteSize.X, SECTION2UILIB.AbsoluteContentSize.Y + 42), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true)
-			task.wait()
-			_PARENT:TweenSize(UDim2.fromOffset(_PARENT.AbsoluteSize.X, LIST.AbsoluteContentSize.Y + 15), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true)
+			local w = library:GetSectionWidth()
+			SECTIONHOLDER.Size = UDim2.fromOffset(w, lp(SECTION2UILIB.AbsoluteContentSize.Y) + 31)
+			_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, lp(LIST.AbsoluteContentSize.Y) + 15)
 			UpdateMainSize(nil, true)
 		end
 
@@ -4795,7 +4874,7 @@ function library:AddWindow(text)
 							end
 						end
 						local h = calcVisibleHeight(entry.ItemsHolder, entry.ListLayout)
-						entry.Holder.Size = UDim2.fromOffset(entry.Holder.AbsoluteSize.X, h + 42)
+						entry.Holder.Size = UDim2.fromOffset(entry.Holder.Size.X.Offset > 0 and entry.Holder.Size.X.Offset or 275, h + 42)
 					else
 						-- Check each element inside this section
 						for _, child in ipairs(entry.ItemsHolder:GetChildren()) do
@@ -4852,7 +4931,7 @@ function library:AddWindow(text)
 
 						if entry.Holder.Visible then
 							local h = calcVisibleHeight(entry.ItemsHolder, entry.ListLayout)
-							entry.Holder.Size = UDim2.fromOffset(entry.Holder.AbsoluteSize.X, h + 42)
+							entry.Holder.Size = UDim2.fromOffset(entry.Holder.Size.X.Offset > 0 and entry.Holder.Size.X.Offset or 275, h + 42)
 						end
 					end
 				end
@@ -5119,7 +5198,7 @@ function library:AddWindow(text)
 			library:BindTooltip(SECTIONCOLOUR, Options.Tooltip)
 			ResizeSection()
 			AutoFit(SECTIONHOLDER,SECTION2UILIB)
-			_PARENT:TweenSize(UDim2.fromOffset(_PARENT.AbsoluteSize.X,  LIST.AbsoluteContentSize.Y + 15),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true) 
+			_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, lp(LIST.AbsoluteContentSize.Y) + 15) 
 
 			TrackedConnect(OPENCLOSE.MouseButton1Click, function()
 				OpenedColor(Text,ColourDisplay,Action,Color)
@@ -5475,32 +5554,27 @@ function library:AddWindow(text)
 					if not success then warn("[Plague UI] Callback error:", err) end
 				end)
 
-				SECTIONHOLDER:TweenSize(UDim2.fromOffset(SECTIONHOLDER.AbsoluteSize.X,  SECTION2UILIB.AbsoluteContentSize.Y + 42),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true) 
-				task.wait()
-				_PARENT:TweenSize(UDim2.fromOffset(_PARENT.AbsoluteSize.X,  LIST.AbsoluteContentSize.Y + 15),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true) 
-				task.wait()
+				SECTIONHOLDER.Size = UDim2.fromOffset(library:GetSectionWidth(), lp(SECTION2UILIB.AbsoluteContentSize.Y) + 31)
+				_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, lp(LIST.AbsoluteContentSize.Y) + 15)
 				UpdateMainSize(nil,true)
 
 				AddRipple(OPTION,TextLabel_3)
 			end
 
 			TrackedConnect(Toggle.MouseButton1Click, function()
+				local dropW = DRPDOWN.Size.X.Offset
+				if dropW <= 0 then dropW = 252 end
 				if not K then
 					TweenService:Create(TextLabel_2 , TweenInfo.new(0.26, Enum.EasingStyle.Quad , Enum.EasingDirection.Out), {Rotation = 180}):Play()	
-					DRPDOWN:TweenSize(UDim2.fromOffset(DRPDOWN.AbsoluteSize.X,  UIListLayout.AbsoluteContentSize.Y + 11),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
+					DRPDOWN:TweenSize(UDim2.fromOffset(dropW, lp(UIListLayout.AbsoluteContentSize.Y) + 11),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
 					K = not K
 				else
-					DRPDOWN:TweenSize(UDim2.new(0,DRPDOWN.AbsoluteSize.X,0, 25),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
+					DRPDOWN:TweenSize(UDim2.fromOffset(dropW, 25),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
 					TweenService:Create(TextLabel_2 , TweenInfo.new(0.26, Enum.EasingStyle.Quad , Enum.EasingDirection.Out), {Rotation = 0}):Play()	
 					K = not K
 				end
 				task.wait(.3)
-				SECTIONHOLDER:TweenSize(UDim2.fromOffset(SECTIONHOLDER.AbsoluteSize.X,  SECTION2UILIB.AbsoluteContentSize.Y + 42),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
-				task.wait(.2)
-				_PARENT:TweenSize(UDim2.fromOffset(_PARENT.AbsoluteSize.X,  LIST.AbsoluteContentSize.Y + 15),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true) 
-				task.wait(.2)
-				UpdateMainSize(nil,true)
-
+				ResizeSection()
 			end)
 
 
@@ -5577,7 +5651,7 @@ function library:AddWindow(text)
 			ResizeSection()
 		end			
 		AutoFit(SECTIONHOLDER,SECTION2UILIB)
-		_PARENT:TweenSize(UDim2.fromOffset(_PARENT.AbsoluteSize.X,  LIST.AbsoluteContentSize.Y + 15),Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0, true) 
+		_PARENT.Size = UDim2.new(_PARENT.Size.X.Scale, _PARENT.Size.X.Offset, 0, lp(LIST.AbsoluteContentSize.Y) + 15) 
 
 		return inside
 	end
@@ -6014,7 +6088,7 @@ function library:InitSearchTab()
 	SearchHolder.ClipsDescendants = true
 	SearchHolder.Position = UDim2.new(0,0,0.019,0)
 	SearchHolder.Visible = false
-	SearchHolder.Size = UDim2.new(0, 588, 0, 350)
+	SearchHolder.Size = UDim2.new(0, library.MenuWidth or 588, 0, math.max(50, (library.MenuHeight or 415) - (library.MenuHeader or 25) - (library.MenuFooter or 24) - 6))
 	SearchHolder.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
 	SearchHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
 	SearchHolder.ScrollBarThickness = 5
