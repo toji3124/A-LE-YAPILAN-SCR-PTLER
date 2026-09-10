@@ -5777,7 +5777,7 @@ function library:InitSearchTab()
 	SearchBoxIcon.Size = UDim2.new(0, 14, 1, 0)
 	SearchBoxIcon.ZIndex = 4
 	SearchBoxIcon.Font = Enum.Font.SourceSans
-	SearchBoxIcon.Text = "⌕"
+	SearchBoxIcon.Text = ""
 	SearchBoxIcon.TextColor3 = Color3.fromRGB(110, 110, 110)
 	SearchBoxIcon.TextSize = 14
 	SearchBoxIcon.TextXAlignment = Enum.TextXAlignment.Center
