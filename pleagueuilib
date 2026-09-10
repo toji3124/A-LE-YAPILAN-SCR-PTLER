@@ -916,17 +916,21 @@ function library:AddWatermark(Text, Options)
 	local fpsLastUpdate = tick()
 	
 	-- Oyun adını al
-	local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown Game"
+	local gameName = "Unknown Game"
+	pcall(function()
+		gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown Game"
+	end)
 	
 	--[MAIN WATERMARK FRAME]--
 	local obj1 = Instance.new("Frame")
-	obj1.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+	obj1.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
 	obj1.BorderSizePixel = 0
-	obj1.Size = UDim2.new(0, 400, 0, 28) -- Yatay ve tek satır
+	obj1.AutomaticSize = Enum.AutomaticSize.X
+	obj1.Size = UDim2.new(0, 0, 0, 24)
 	obj1.ZIndex = 100
 	obj1.Name = "WatermarkMain"
 	obj1.Visible = StartVisible
-	obj1.ClipsDescendants = false
+	obj1.ClipsDescendants = true
 	obj1.Parent = PCR_OVERLAY  -- Ana UI'den bağımsız
 	
 	-- Position ayarlama
@@ -946,167 +950,129 @@ function library:AddWatermark(Text, Options)
 	
 	--[UIStroke - Border]--
 	local obj2 = Instance.new("UIStroke", obj1)
-	obj2.Color = Color3.fromRGB(91, 133, 197)
-	obj2.Thickness = 2
+	obj2.Color = Color3.fromRGB(42, 42, 42)
+	obj2.Thickness = 1
 	obj2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	
-	--[GLOW EFFECT - Opsiyonel]--
-	local glowStroke
-	if EnableGlow then
-		glowStroke = Instance.new("UIStroke", obj1)
-		glowStroke.Color = Color3.fromRGB(91, 133, 197)
-		glowStroke.Thickness = 0
-		glowStroke.Transparency = 0.5
-		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		
-		-- Glow animasyonu
-		task.spawn(function()
-			while obj1 and obj1.Parent do
-				for i = 0, 1, 0.05 do
-					if not obj1 or not obj1.Parent then break end
-					glowStroke.Thickness = 2 + (i * 4) -- 2-6 arası
-					glowStroke.Transparency = 0.5 + (i * 0.5) -- 0.5-1 arası
-					task.wait(0.05)
-				end
-				for i = 1, 0, -0.05 do
-					if not obj1 or not obj1.Parent then break end
-					glowStroke.Thickness = 2 + (i * 4)
-					glowStroke.Transparency = 0.5 + (i * 0.5)
-					task.wait(0.05)
-				end
-			end
-		end)
-	end
-	
-	--[SHADOW EFFECT - Opsiyonel]--
-	local shadowFrame
-	if EnableShadow then
-		shadowFrame = Instance.new("Frame", obj1)
-		shadowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-		shadowFrame.Position = UDim2.new(0.5, 2, 0.5, 3) -- Hafif offset
-		shadowFrame.Size = UDim2.new(1, 0, 1, 0)
-		shadowFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		shadowFrame.BackgroundTransparency = 0.7
-		shadowFrame.BorderSizePixel = 0
-		shadowFrame.ZIndex = 99 -- Main frame'in altında
-		
-		local shadowCorner = Instance.new("UICorner", shadowFrame)
-		shadowCorner.CornerRadius = UDim.new(0, 4)
-		
-		-- Shadow blur efekti (ImageLabel ile)
-		local shadowBlur = Instance.new("ImageLabel", shadowFrame)
-		shadowBlur.Size = UDim2.new(1, 20, 1, 20)
-		shadowBlur.Position = UDim2.new(0.5, 0, 0.5, 0)
-		shadowBlur.AnchorPoint = Vector2.new(0.5, 0.5)
-		shadowBlur.BackgroundTransparency = 1
-		shadowBlur.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-		shadowBlur.ImageColor3 = Color3.fromRGB(0, 0, 0)
-		shadowBlur.ImageTransparency = 0.8
-		shadowBlur.ZIndex = 99
-	end
 	
 	--[UICorner]--
 	local corner = Instance.new("UICorner", obj1)
 	corner.CornerRadius = UDim.new(0, 4)
 	
-	--[GRADIENT]--
-	local gradient = Instance.new("UIGradient", obj1)
-	gradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 28, 28)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
-	})
-	gradient.Rotation = 90
+	--[TOP ACCENT LINE]--
+	local accent = Instance.new("Frame", obj1)
+	accent.Name = "Accent"
+	accent.BackgroundColor3 = Color3.fromRGB(91, 133, 197)
+	accent.BorderSizePixel = 0
+	accent.Position = UDim2.new(0, 0, 0, 0)
+	accent.Size = UDim2.new(1, 0, 0, 2)
+	accent.ZIndex = 103
 	
-	--[INNER FRAME]--
+	--[GLOW EFFECT - Opsiyonel, accent çizgisini yumuşak pulse]--
+	local glowStroke
+	if EnableGlow then
+		glowStroke = Instance.new("UIStroke", obj1)
+		glowStroke.Color = Color3.fromRGB(91, 133, 197)
+		glowStroke.Thickness = 1
+		glowStroke.Transparency = 0.7
+		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		
+		task.spawn(function()
+			while obj1 and obj1.Parent do
+				if not obj1.Visible then
+					task.wait(0.2)
+				else
+					TweenService:Create(glowStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+						Transparency = 0.35
+					}):Play()
+					task.wait(1.1)
+					if not obj1 or not obj1.Parent then break end
+					TweenService:Create(glowStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+						Transparency = 0.85
+					}):Play()
+					task.wait(1.1)
+				end
+			end
+		end)
+	end
+	
+	--[SHADOW EFFECT - Opsiyonel, ikinci stroke]--
+	local shadowStroke
+	if EnableShadow then
+		shadowStroke = Instance.new("UIStroke", obj1)
+		shadowStroke.Color = Color3.fromRGB(0, 0, 0)
+		shadowStroke.Thickness = 2
+		shadowStroke.Transparency = 0.72
+		shadowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	end
+	
+	--[CONTENT]--
 	local obj3 = Instance.new("Frame", obj1)
-	obj3.AnchorPoint = Vector2.new(0.5, 0.5)
+	obj3.Name = "Inner"
 	obj3.BackgroundTransparency = 1
 	obj3.BorderSizePixel = 0
-	obj3.Position = UDim2.new(0.5, 0, 0.5, 0)
-	obj3.Size = UDim2.new(1, -8, 1, -8)
+	obj3.Position = UDim2.new(0, 0, 0, 2)
+	obj3.Size = UDim2.new(0, 0, 1, -2)
+	obj3.AutomaticSize = Enum.AutomaticSize.X
 	obj3.ZIndex = 101
-	obj3.Name = "Inner"
+	
+	local contentPad = Instance.new("UIPadding", obj3)
+	contentPad.PaddingLeft = UDim.new(0, 10)
+	contentPad.PaddingRight = UDim.new(0, 10)
+	contentPad.PaddingTop = UDim.new(0, 2)
+	contentPad.PaddingBottom = UDim.new(0, 2)
+	
+	local contentList = Instance.new("UIListLayout", obj3)
+	contentList.FillDirection = Enum.FillDirection.Horizontal
+	contentList.VerticalAlignment = Enum.VerticalAlignment.Center
+	contentList.SortOrder = Enum.SortOrder.LayoutOrder
+	contentList.Padding = UDim.new(0, 8)
+	
+	local function makeLabel(text, color, textSize, bold, order)
+		local label = Instance.new("TextLabel", obj3)
+		label.BackgroundTransparency = 1
+		label.BorderSizePixel = 0
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.Size = UDim2.new(0, 0, 1, 0)
+		label.Font = bold and Enum.Font.SourceSansSemibold or Enum.Font.SourceSans
+		label.Text = text
+		label.TextColor3 = color
+		label.TextSize = textSize
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextYAlignment = Enum.TextYAlignment.Center
+		label.LayoutOrder = order
+		label.ZIndex = 102
+		return label
+	end
+	
+	local function makeSep(order)
+		local sep = Instance.new("Frame", obj3)
+		sep.BackgroundColor3 = Color3.fromRGB(52, 52, 52)
+		sep.BorderSizePixel = 0
+		sep.Size = UDim2.new(0, 1, 0, 11)
+		sep.LayoutOrder = order
+		sep.ZIndex = 102
+		return sep
+	end
 	
 	--[TITLE LABEL]--
-	local titleLabel = Instance.new("TextLabel", obj3)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.BorderSizePixel = 0
-	titleLabel.Position = UDim2.new(0, 8, 0, 0)
-	titleLabel.Size = UDim2.new(0.25, -10, 1, 0) -- %25 genişlik
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.Text = Text
-	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	titleLabel.TextSize = 13
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
-	titleLabel.TextScaled = false
-	titleLabel.ZIndex = 102
+	local titleLabel = makeLabel(Text, Color3.fromRGB(220, 220, 220), 13, true, 1)
 	
-	--[SEPARATOR 1]--
-	local sep1
+	--[GAME]--
+	local sep1, gameLabel
 	if ShowGame then
-		sep1 = Instance.new("TextLabel", obj3)
-		sep1.BackgroundTransparency = 1
-		sep1.BorderSizePixel = 0
-		sep1.Position = UDim2.new(0.25, 5, 0, 0)
-		sep1.Size = UDim2.new(0, 10, 1, 0)
-		sep1.Font = Enum.Font.Gotham
-		sep1.Text = "|"
-		sep1.TextColor3 = Color3.fromRGB(91, 133, 197)
-		sep1.TextSize = 12
-		sep1.TextXAlignment = Enum.TextXAlignment.Center
-		sep1.TextYAlignment = Enum.TextYAlignment.Center
-		sep1.ZIndex = 102
-	end
-	
-	--[GAME LABEL]--
-	local gameLabel
-	if ShowGame then
-		gameLabel = Instance.new("TextLabel", obj3)
-		gameLabel.BackgroundTransparency = 1
-		gameLabel.BorderSizePixel = 0
-		gameLabel.Position = UDim2.new(0.25, 20, 0, 0)
-		gameLabel.Size = UDim2.new(0.4, -25, 1, 0) -- %40 genişlik
-		gameLabel.Font = Enum.Font.GothamSemibold
-		gameLabel.Text = gameName
-		gameLabel.TextColor3 = Color3.fromRGB(91, 133, 197)
-		gameLabel.TextSize = 11
-		gameLabel.TextXAlignment = Enum.TextXAlignment.Left
-		gameLabel.TextYAlignment = Enum.TextYAlignment.Center
-		gameLabel.TextScaled = false
-		gameLabel.ZIndex = 102
-	end
-	
-	--[SEPARATOR 2]--
-	local sep2
-	if ShowGame then
-		sep2 = Instance.new("TextLabel", obj3)
-		sep2.BackgroundTransparency = 1
-		sep2.BorderSizePixel = 0
-		sep2.Position = UDim2.new(0.65, 0, 0, 0)
-		sep2.Size = UDim2.new(0, 10, 1, 0)
-		sep2.Font = Enum.Font.Gotham
-		sep2.Text = "|"
-		sep2.TextColor3 = Color3.fromRGB(91, 133, 197)
-		sep2.TextSize = 12
-		sep2.TextXAlignment = Enum.TextXAlignment.Center
-		sep2.TextYAlignment = Enum.TextYAlignment.Center
-		sep2.ZIndex = 102
+		sep1 = makeSep(2)
+		if #gameName > 28 then
+			gameName = string.sub(gameName, 1, 26) .. "..."
+		end
+		gameLabel = makeLabel(gameName, Color3.fromRGB(145, 160, 190), 12, false, 3)
 	end
 	
 	--[INFO LABEL (FPS + PING)]--
-	local infoLabel = Instance.new("TextLabel", obj3)
-	infoLabel.BackgroundTransparency = 1
-	infoLabel.BorderSizePixel = 0
-	infoLabel.Position = UDim2.new(0.65, 15, 0, 0)
-	infoLabel.Size = UDim2.new(0.35, -23, 1, 0) -- %35 genişlik
-	infoLabel.Font = Enum.Font.Gotham
-	infoLabel.Text = ""
-	infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-	infoLabel.TextSize = 11
-	infoLabel.TextXAlignment = Enum.TextXAlignment.Right
-	infoLabel.TextYAlignment = Enum.TextYAlignment.Center
-	infoLabel.ZIndex = 102
+	local sep2, infoLabel
+	if ShowFPS or ShowPing then
+		sep2 = makeSep(4)
+		infoLabel = makeLabel("", Color3.fromRGB(175, 175, 175), 12, false, 5)
+	end
 	
 	-- Draggable yapma
 	draggable(obj1)
@@ -1127,46 +1093,31 @@ function library:AddWatermark(Text, Options)
 	
 	-- Update info text
 	local function updateInfoText()
+		if not infoLabel then return end
 		local infoText = {}
 		
 		if ShowFPS then
-			table.insert(infoText, string.format("FPS: %d", fps))
+			table.insert(infoText, string.format("FPS  %d", fps))
 		end
 		
 		if ShowPing then
 			pcall(function()
 				local pingStr = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
 				ping = tonumber(pingStr:match("(%d+)")) or 0
-				table.insert(infoText, string.format("Ping: %dms", ping))
+				table.insert(infoText, string.format("Ping  %dms", ping))
 			end)
 		end
 		
-		infoLabel.Text = table.concat(infoText, "  |  ")
-		
-		-- Dinamik boyut ayarlama - içeriğe göre genişler
-		local titleWidth = game:GetService("TextService"):GetTextSize(titleLabel.Text, titleLabel.TextSize, titleLabel.Font, Vector2.new(1000, 20)).X
-		local infoWidth = game:GetService("TextService"):GetTextSize(infoLabel.Text, infoLabel.TextSize, infoLabel.Font, Vector2.new(1000, 20)).X
-		
-		local totalWidth = titleWidth + infoWidth + 60 -- base padding
-		
-		if ShowGame and gameLabel then
-			local gameWidth = game:GetService("TextService"):GetTextSize(gameLabel.Text, gameLabel.TextSize, gameLabel.Font, Vector2.new(2000, 20)).X
-			totalWidth = totalWidth + gameWidth + 50 -- game + separator padding
-		end
-		
-		-- Minimum 400px, maksimum 800px
-		local newWidth = math.clamp(totalWidth, 400, 800)
-		
-		TweenService:Create(obj1, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, newWidth, 0, 28)
-		}):Play()
+		infoLabel.Text = table.concat(infoText, "   ")
 	end
 	
-	-- Update loop
+	-- Update loop (metin güncellemesi, her karede size tween yok)
 	local updateConnection
+	local lastInfoUpdate = 0
 	if ShowFPS or ShowPing then
 		updateConnection = TrackedConnect(RunService.Heartbeat, function()
-			if obj1.Visible then
+			if obj1.Visible and tick() - lastInfoUpdate >= 0.5 then
+				lastInfoUpdate = tick()
 				updateInfoText()
 			end
 		end)
@@ -1180,98 +1131,54 @@ function library:AddWatermark(Text, Options)
 	end
 	
 	function intern:SetVisible(visible)
+		local fadeInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local function fadeText(inst, t)
+			if inst then TweenService:Create(inst, fadeInfo, {TextTransparency = t}):Play() end
+		end
+		local function fadeBg(inst, t)
+			if inst then TweenService:Create(inst, fadeInfo, {BackgroundTransparency = t}):Play() end
+		end
+		local function fadeStroke(inst, t)
+			if inst then TweenService:Create(inst, fadeInfo, {Transparency = t}):Play() end
+		end
+		
 		if visible then
 			obj1.Visible = true
-			-- Fade in animasyonu
 			obj1.BackgroundTransparency = 1
 			titleLabel.TextTransparency = 1
-			infoLabel.TextTransparency = 1
+			if infoLabel then infoLabel.TextTransparency = 1 end
 			obj2.Transparency = 1
-			if ShowGame and gameLabel then
-				gameLabel.TextTransparency = 1
-			end
-			if ShowGame and sep1 then
-				sep1.TextTransparency = 1
-			end
-			if ShowGame and sep2 then
-				sep2.TextTransparency = 1
-			end
-			if EnableGlow and glowStroke then
-				glowStroke.Transparency = 1
-			end
-			if EnableShadow and shadowFrame then
-				shadowFrame.BackgroundTransparency = 1
-			end
+			accent.BackgroundTransparency = 1
+			if gameLabel then gameLabel.TextTransparency = 1 end
+			if sep1 then sep1.BackgroundTransparency = 1 end
+			if sep2 then sep2.BackgroundTransparency = 1 end
+			if glowStroke then glowStroke.Transparency = 1 end
+			if shadowStroke then shadowStroke.Transparency = 1 end
 			
-			TweenService:Create(obj1, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				BackgroundTransparency = 0
-			}):Play()
-			TweenService:Create(titleLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				TextTransparency = 0
-			}):Play()
-			TweenService:Create(infoLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				TextTransparency = 0
-			}):Play()
-			TweenService:Create(obj2, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Transparency = 0
-			}):Play()
-			if ShowGame and gameLabel then
-				TweenService:Create(gameLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 0
-				}):Play()
-			end
-			if ShowGame and sep1 then
-				TweenService:Create(sep1, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 0
-				}):Play()
-			end
-			if ShowGame and sep2 then
-				TweenService:Create(sep2, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 0
-				}):Play()
-			end
-			if EnableShadow and shadowFrame then
-				TweenService:Create(shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					BackgroundTransparency = 0.7
-				}):Play()
-			end
+			fadeBg(obj1, 0)
+			fadeText(titleLabel, 0)
+			fadeText(infoLabel, 0)
+			fadeText(gameLabel, 0)
+			fadeStroke(obj2, 0)
+			fadeBg(accent, 0)
+			fadeBg(sep1, 0)
+			fadeBg(sep2, 0)
+			fadeStroke(glowStroke, 0.7)
+			fadeStroke(shadowStroke, 0.72)
 		else
-			-- Fade out animasyonu
-			TweenService:Create(obj1, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				BackgroundTransparency = 1
-			}):Play()
-			TweenService:Create(titleLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				TextTransparency = 1
-			}):Play()
-			TweenService:Create(infoLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				TextTransparency = 1
-			}):Play()
-			TweenService:Create(obj2, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Transparency = 1
-			}):Play()
-			if ShowGame and gameLabel then
-				TweenService:Create(gameLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 1
-				}):Play()
-			end
-			if ShowGame and sep1 then
-				TweenService:Create(sep1, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 1
-				}):Play()
-			end
-			if ShowGame and sep2 then
-				TweenService:Create(sep2, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextTransparency = 1
-				}):Play()
-			end
-			if EnableShadow and shadowFrame then
-				TweenService:Create(shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					BackgroundTransparency = 1
-				}):Play()
-			end
+			fadeBg(obj1, 1)
+			fadeText(titleLabel, 1)
+			fadeText(infoLabel, 1)
+			fadeText(gameLabel, 1)
+			fadeStroke(obj2, 1)
+			fadeBg(accent, 1)
+			fadeBg(sep1, 1)
+			fadeBg(sep2, 1)
+			fadeStroke(glowStroke, 1)
+			fadeStroke(shadowStroke, 1)
 			
-			task.delay(0.3, function()
-				obj1.Visible = false
+			task.delay(0.25, function()
+				if obj1 then obj1.Visible = false end
 			end)
 		end
 	end
@@ -1322,6 +1229,7 @@ function library:AddWatermark(Text, Options)
 	library.Watermark = intern
 	
 	-- İlk update
+	updateInfoText()
 	if ShowFPS or ShowPing then
 		task.delay(0.5, updateInfoText)
 	end
