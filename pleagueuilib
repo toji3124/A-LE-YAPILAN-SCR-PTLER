@@ -4490,43 +4490,58 @@ function library:AddWindow(text)
 			SearchFrame.Name = "SearchBoxFrame"
 			SearchFrame.BackgroundTransparency = 1
 			SearchFrame.BorderSizePixel = 0
-			SearchFrame.Size = UDim2.new(0, 248, 0, 26)
+			SearchFrame.Size = UDim2.new(0, 248, 0, 32)
 			SearchFrame.ZIndex = 20
 			SearchFrame.Parent = HOLDER_2
 
 			--[Background Frame]--
 			local SearchBG = Instance.new("Frame")
-			SearchBG.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+			SearchBG.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
 			SearchBG.BorderSizePixel = 0
 			SearchBG.Position = UDim2.new(0, 0, 0, 4)
-			SearchBG.Size = UDim2.new(1, 0, 0, 18)
+			SearchBG.Size = UDim2.new(1, 0, 0, 24)
 			SearchBG.ZIndex = 21
+			SearchBG.ClipsDescendants = true
 			SearchBG.Parent = SearchFrame
 
 			local SearchCorner = Instance.new("UICorner")
-			SearchCorner.CornerRadius = UDim.new(0, 4)
+			SearchCorner.CornerRadius = UDim.new(0, 5)
 			SearchCorner.Parent = SearchBG
 
 			local SearchStroke = Instance.new("UIStroke")
-			SearchStroke.Color = Color3.fromRGB(52, 52, 52)
+			SearchStroke.Color = Color3.fromRGB(48, 48, 48)
 			SearchStroke.Thickness = 1
 			SearchStroke.Transparency = 0
+			SearchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 			SearchStroke.Parent = SearchBG
+
+			local SearchIcon = Instance.new("TextLabel")
+			SearchIcon.BackgroundTransparency = 1
+			SearchIcon.BorderSizePixel = 0
+			SearchIcon.Position = UDim2.new(0, 6, 0, 0)
+			SearchIcon.Size = UDim2.new(0, 16, 1, 0)
+			SearchIcon.ZIndex = 23
+			SearchIcon.Font = Enum.Font.SourceSans
+			SearchIcon.Text = "⌕"
+			SearchIcon.TextColor3 = Color3.fromRGB(110, 110, 110)
+			SearchIcon.TextSize = 16
+			SearchIcon.TextXAlignment = Enum.TextXAlignment.Center
+			SearchIcon.Parent = SearchBG
 
 			--[TextBox Input]--
 			local SearchBox = Instance.new("TextBox")
 			SearchBox.BackgroundTransparency = 1
 			SearchBox.BorderSizePixel = 0
-			SearchBox.Position = UDim2.new(0, 5, 0, 0)
-			SearchBox.Size = UDim2.new(1, -22, 1, 0)
+			SearchBox.Position = UDim2.new(0, 24, 0, 0)
+			SearchBox.Size = UDim2.new(1, -42, 1, 0)
 			SearchBox.ZIndex = 23
 			SearchBox.ClearTextOnFocus = false
 			SearchBox.Font = Enum.Font.SourceSans
 			SearchBox.PlaceholderText = Placeholder
-			SearchBox.PlaceholderColor3 = Color3.fromRGB(80, 80, 80)
+			SearchBox.PlaceholderColor3 = Color3.fromRGB(90, 90, 90)
 			SearchBox.Text = ""
-			SearchBox.TextColor3 = Color3.fromRGB(197, 197, 197)
-			SearchBox.TextSize = 12
+			SearchBox.TextColor3 = Color3.fromRGB(210, 210, 210)
+			SearchBox.TextSize = 13
 			SearchBox.TextXAlignment = Enum.TextXAlignment.Left
 			SearchBox.TextTruncate = Enum.TextTruncate.AtEnd
 			SearchBox.Parent = SearchBG
@@ -4535,13 +4550,13 @@ function library:AddWindow(text)
 			local ClearBtn = Instance.new("TextButton")
 			ClearBtn.BackgroundTransparency = 1
 			ClearBtn.BorderSizePixel = 0
-			ClearBtn.Position = UDim2.new(1, -16, 0, 0)
-			ClearBtn.Size = UDim2.new(0, 14, 1, 0)
+			ClearBtn.Position = UDim2.new(1, -20, 0, 0)
+			ClearBtn.Size = UDim2.new(0, 18, 1, 0)
 			ClearBtn.ZIndex = 24
 			ClearBtn.Font = Enum.Font.SourceSansBold
 			ClearBtn.Text = "✕"
-			ClearBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
-			ClearBtn.TextSize = 11
+			ClearBtn.TextColor3 = Color3.fromRGB(90, 90, 90)
+			ClearBtn.TextSize = 12
 			ClearBtn.Visible = false
 			ClearBtn.Parent = SearchBG
 
@@ -5734,22 +5749,57 @@ function library:SetCustomMouseSize(size)
 	end
 end
 function library:InitSearchTab()
+	local SearchBoxWrap = Instance.new("Frame")
+	SearchBoxWrap.Name = "SearchBoxWrap"
+	SearchBoxWrap.Parent = Upper
+	SearchBoxWrap.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+	SearchBoxWrap.BorderSizePixel = 0
+	SearchBoxWrap.Size = UDim2.new(0, 128, 0, 18)
+	SearchBoxWrap.ZIndex = 3
+	SearchBoxWrap.ClipsDescendants = true
+
+	local SearchBoxCorner = Instance.new("UICorner")
+	SearchBoxCorner.CornerRadius = UDim.new(0, 4)
+	SearchBoxCorner.Parent = SearchBoxWrap
+
+	local SearchBoxStroke = Instance.new("UIStroke")
+	SearchBoxStroke.Color = Color3.fromRGB(48, 48, 48)
+	SearchBoxStroke.Thickness = 1
+	SearchBoxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	SearchBoxStroke.Parent = SearchBoxWrap
+
+	local SearchBoxIcon = Instance.new("TextLabel")
+	SearchBoxIcon.Name = "SearchIcon"
+	SearchBoxIcon.Parent = SearchBoxWrap
+	SearchBoxIcon.BackgroundTransparency = 1
+	SearchBoxIcon.BorderSizePixel = 0
+	SearchBoxIcon.Position = UDim2.new(0, 4, 0, 0)
+	SearchBoxIcon.Size = UDim2.new(0, 14, 1, 0)
+	SearchBoxIcon.ZIndex = 4
+	SearchBoxIcon.Font = Enum.Font.SourceSans
+	SearchBoxIcon.Text = "⌕"
+	SearchBoxIcon.TextColor3 = Color3.fromRGB(110, 110, 110)
+	SearchBoxIcon.TextSize = 14
+	SearchBoxIcon.TextXAlignment = Enum.TextXAlignment.Center
+
 	local SearchBoxTab = Instance.new("TextBox")
 	SearchBoxTab.Name = "SearchBoxTab"
-	SearchBoxTab.Parent = Upper
-	SearchBoxTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	SearchBoxTab.BackgroundTransparency = 1.000
+	SearchBoxTab.Parent = SearchBoxWrap
+	SearchBoxTab.BackgroundTransparency = 1
 	SearchBoxTab.BorderSizePixel = 0
-	SearchBoxTab.Size = UDim2.new(0, 70, 0, 13)
-	SearchBoxTab.Position = UDim2.new(0, 0, 0.281, 0)
-	SearchBoxTab.ZIndex = 3
+	SearchBoxTab.Position = UDim2.new(0, 18, 0, 0)
+	SearchBoxTab.Size = UDim2.new(1, -22, 1, 0)
+	SearchBoxTab.ZIndex = 4
+	SearchBoxTab.ClearTextOnFocus = false
 	SearchBoxTab.Font = Enum.Font.SourceSansSemibold
 	SearchBoxTab.PlaceholderText = "Search..."
-	SearchBoxTab.PlaceholderColor3 = Color3.fromRGB(138, 138, 138)
+	SearchBoxTab.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
 	SearchBoxTab.Text = ""
 	SearchBoxTab.TextColor3 = Color3.fromRGB(210, 210, 210)
-	SearchBoxTab.TextSize = 16.000
-	SearchBoxTab.TextXAlignment = Enum.TextXAlignment.Center
+	SearchBoxTab.TextSize = 13
+	SearchBoxTab.TextXAlignment = Enum.TextXAlignment.Left
+	SearchBoxTab.TextTruncate = Enum.TextTruncate.AtEnd
+	SearchBoxTab.ClipsDescendants = true
 	
 	local SearchHolder = Instance.new("ScrollingFrame")
 	SearchHolder.Name = "SearchHolder"
@@ -5837,18 +5887,18 @@ function library:InitSearchTab()
 				TweenService:Create(v, TweenInfo.new(0.26, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {TextColor3 = Color3.fromRGB(138, 138, 138)}):Play()	
 			end
 		end
-		TweenService:Create(SearchBoxTab, TweenInfo.new(0.26, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {TextColor3 = Color3.fromRGB(210, 210, 210)}):Play()	
+		TweenService:Create(SearchBoxTab, TweenInfo.new(0.26, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {TextColor3 = Color3.fromRGB(210, 210, 210)}):Play()
+		TweenService:Create(SearchBoxStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Color = Color3.fromRGB(91, 133, 197)
+		}):Play()
 	end
 
-	if SearchBoxTab.Focused then
-		SearchBoxTab.Focused:Connect(OnFocus)
-	else
-		SearchBoxTab.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				OnFocus()
-			end
-		end)
-	end
+	TrackedConnect(SearchBoxTab.Focused, OnFocus)
+	TrackedConnect(SearchBoxTab.FocusLost, function()
+		TweenService:Create(SearchBoxStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Color = Color3.fromRGB(48, 48, 48)
+		}):Play()
+	end)
 
 	SearchBoxTab:GetPropertyChangedSignal("Text"):Connect(function()
 		local query = SearchBoxTab.Text
