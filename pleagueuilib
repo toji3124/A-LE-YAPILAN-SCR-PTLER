@@ -899,12 +899,18 @@ end
 function library:AddWatermark(Text, Options)
 	local intern = {}
 	
+	if type(Options) == "string" then
+		Options = { Position = Options }
+	elseif type(Options) ~= "table" then
+		Options = {}
+	end
+	
 	-- Default options
-	Options = Options or {}
 	local StartVisible = Options.Visible ~= false -- varsayılan true
 	local ShowFPS = Options.ShowFPS ~= false -- varsayılan true
 	local ShowPing = Options.ShowPing ~= false -- varsayılan true
 	local ShowGame = Options.ShowGame ~= false -- varsayılan true (OYUN ADI)
+	local ShowUser = Options.ShowUser ~= false -- varsayılan true (hesap nick)
 	local Position = Options.Position or "TopRight" -- "TopLeft", "TopRight", "BottomLeft", "BottomRight"
 	local EnableGlow = Options.EnableGlow == true -- varsayılan false (opsiyonel)
 	local EnableShadow = Options.EnableShadow == true -- varsayılan false (opsiyonel)
@@ -919,6 +925,14 @@ function library:AddWatermark(Text, Options)
 	local gameName = "Unknown Game"
 	pcall(function()
 		gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown Game"
+	end)
+	
+	local userName = "Unknown"
+	pcall(function()
+		local lp = game.Players.LocalPlayer
+		if lp then
+			userName = lp.Name
+		end
 	end)
 	
 	--[MAIN WATERMARK FRAME]--
@@ -1057,21 +1071,28 @@ function library:AddWatermark(Text, Options)
 	--[TITLE LABEL]--
 	local titleLabel = makeLabel(Text, Color3.fromRGB(220, 220, 220), 13, true, 1)
 	
+	--[USER / ACCOUNT]--
+	local sepUser, userLabel
+	if ShowUser then
+		sepUser = makeSep(2)
+		userLabel = makeLabel(userName, Color3.fromRGB(200, 200, 200), 12, false, 3)
+	end
+	
 	--[GAME]--
 	local sep1, gameLabel
 	if ShowGame then
-		sep1 = makeSep(2)
+		sep1 = makeSep(4)
 		if #gameName > 28 then
 			gameName = string.sub(gameName, 1, 26) .. "..."
 		end
-		gameLabel = makeLabel(gameName, Color3.fromRGB(145, 160, 190), 12, false, 3)
+		gameLabel = makeLabel(gameName, Color3.fromRGB(145, 160, 190), 12, false, 5)
 	end
 	
 	--[INFO LABEL (FPS + PING)]--
 	local sep2, infoLabel
 	if ShowFPS or ShowPing then
-		sep2 = makeSep(4)
-		infoLabel = makeLabel("", Color3.fromRGB(175, 175, 175), 12, false, 5)
+		sep2 = makeSep(6)
+		infoLabel = makeLabel("", Color3.fromRGB(175, 175, 175), 12, false, 7)
 	end
 	
 	-- Draggable yapma
@@ -1150,6 +1171,8 @@ function library:AddWatermark(Text, Options)
 			obj2.Transparency = 1
 			accent.BackgroundTransparency = 1
 			if gameLabel then gameLabel.TextTransparency = 1 end
+			if userLabel then userLabel.TextTransparency = 1 end
+			if sepUser then sepUser.BackgroundTransparency = 1 end
 			if sep1 then sep1.BackgroundTransparency = 1 end
 			if sep2 then sep2.BackgroundTransparency = 1 end
 			if glowStroke then glowStroke.Transparency = 1 end
@@ -1159,8 +1182,10 @@ function library:AddWatermark(Text, Options)
 			fadeText(titleLabel, 0)
 			fadeText(infoLabel, 0)
 			fadeText(gameLabel, 0)
+			fadeText(userLabel, 0)
 			fadeStroke(obj2, 0)
 			fadeBg(accent, 0)
+			fadeBg(sepUser, 0)
 			fadeBg(sep1, 0)
 			fadeBg(sep2, 0)
 			fadeStroke(glowStroke, 0.7)
@@ -1170,8 +1195,10 @@ function library:AddWatermark(Text, Options)
 			fadeText(titleLabel, 1)
 			fadeText(infoLabel, 1)
 			fadeText(gameLabel, 1)
+			fadeText(userLabel, 1)
 			fadeStroke(obj2, 1)
 			fadeBg(accent, 1)
+			fadeBg(sepUser, 1)
 			fadeBg(sep1, 1)
 			fadeBg(sep2, 1)
 			fadeStroke(glowStroke, 1)
@@ -4626,7 +4653,25 @@ function library:AddWindow(text)
 			local NumbersOnly = Options.NumbersOnly or false
 			local Min = Options.Min
 			local Max = Options.Max
-			local Placeholder = Options.Placeholder or "..."
+			local Placeholder = Options.Placeholder
+			if not Placeholder then
+				local dv = tostring(DefaultValue or "")
+				local low = dv:lower()
+				local looksLikeHint = dv ~= "" and not tonumber(dv) and (
+					dv:find(" ", 1, true) ~= nil
+					or low:find("enter", 1, true) ~= nil
+					or dv:find("...", 1, true) ~= nil
+				)
+				if looksLikeHint then
+					Placeholder = dv
+					DefaultValue = ""
+				else
+					Placeholder = "..."
+				end
+			end
+			if tostring(DefaultValue) == Placeholder then
+				DefaultValue = ""
+			end
 			
 			--[TemplateInputBox]--
 			local InputFrame = Instance.new("Frame")
@@ -4680,13 +4725,17 @@ function library:AddWindow(text)
 			InputBox.ZIndex = 28
 			InputBox.ClearTextOnFocus = false
 			InputBox.Font = Enum.Font.ArialBold
-			InputBox.Text = tostring(DefaultValue)
+			InputBox.Text = tostring(DefaultValue or "")
 			InputBox.PlaceholderText = Placeholder
 			InputBox.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
 			InputBox.TextColor3 = Color3.fromRGB(210, 210, 210)
 			InputBox.TextSize = 10
 			InputBox.TextXAlignment = Enum.TextXAlignment.Center
 			InputBox.Parent = BoxBg
+			
+			TrackedConnect(InputBox.Focused, function()
+				InputBox.PlaceholderText = ""
+			end)
 			
 			local function processInput(text)
 				if NumbersOnly then
@@ -4705,6 +4754,9 @@ function library:AddWindow(text)
 			TrackedConnect(InputBox.FocusLost, function(enterPressed)
 				local processed = processInput(InputBox.Text)
 				InputBox.Text = processed
+				if InputBox.Text == "" then
+					InputBox.PlaceholderText = Placeholder
+				end
 				
 				pcall(function()
 					if NumbersOnly then
