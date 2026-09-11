@@ -177,11 +177,6 @@ local function draggable(obj,extern,parented)
 					globals.dragging = false
 					souid = false
 					connection:Disconnect()
-					if obj == MAIN and library.AutoSaveLayout then
-						task.delay(0.15, function()
-							pcall(function() library:SaveLayout(true) end)
-						end)
-					end
 					if extern then
 						if isColliding(parented,obj)  then
 							obj.Position = UDim2.new(0.5,0,0.5,0)
@@ -205,11 +200,6 @@ local function draggable(obj,extern,parented)
 						globals.dragging = false
 						souid = false
 						connection:Disconnect()
-						if obj == MAIN and library.AutoSaveLayout then
-							task.delay(0.15, function()
-								pcall(function() library:SaveLayout(true) end)
-							end)
-						end
 						if isColliding(obj,obj.Section)  then
 							obj = obj.Section
 						end
@@ -871,45 +861,12 @@ library.MenuWidth = 588
 library.MenuHeight = 415
 library.MenuHeader = 25
 library.MenuFooter = 24
-library.LayoutFile = "PlaguUIConfigs/_ui_layout.json"
-library.AutoSaveLayout = false
 
 local uiScaleObj = Instance.new("UIScale")
 uiScaleObj.Name = "MenuScale"
 uiScaleObj.Scale = 1
 uiScaleObj.Parent = MAIN
 library._UIScale = uiScaleObj
-
-local function encodeLayout()
-	local p = MAIN.Position
-	return {
-		Scale = library.CurrentScale or 1,
-		Width = library.MenuWidth,
-		Height = library.MenuHeight,
-		PosXScale = p.X.Scale,
-		PosXOffset = p.X.Offset,
-		PosYScale = p.Y.Scale,
-		PosYOffset = p.Y.Offset,
-	}
-end
-
-local function applyLayout(data)
-	if type(data) ~= "table" then return end
-	if data.Width or data.Height then
-		library:SetMenuSize(data.Width or library.MenuWidth, data.Height or library.MenuHeight, true)
-	end
-	if data.Scale then
-		library:SetScale(data.Scale, true)
-	end
-	if data.PosXScale ~= nil then
-		MAIN.Position = UDim2.new(
-			tonumber(data.PosXScale) or 0.5,
-			tonumber(data.PosXOffset) or 0,
-			tonumber(data.PosYScale) or 0.5,
-			tonumber(data.PosYOffset) or 0
-		)
-	end
-end
 
 function library:_LayoutPx(n)
 	local s = (library._UIScale and library._UIScale.Scale) or library.CurrentScale or 1
